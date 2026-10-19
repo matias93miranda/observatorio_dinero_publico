@@ -6,6 +6,7 @@ from functools import partial
 from pathlib import Path
 
 from .db import now_iso
+from .ingest import imig
 from .ingest import presupuesto_abierto as pa
 from .ingest import series_tiempo as st
 from .ingest.base import run_ingestion
@@ -43,6 +44,7 @@ def sync_all(con: sqlite3.Connection, ejercicios=DEFAULT_EJERCICIOS, *, force=Fa
         c, r = pa.credito_def(ej), pa.recursos_def(ej)
         go(c, partial(pa.load_credito, ds=c))
         go(r, partial(pa.load_recursos, ds=r))
+    go(imig.dataset_def(), imig.load)
     for sid in st.SERIES:
         go(st.series_def(sid), st.make_loader(sid))
     for ej in ejercicios:

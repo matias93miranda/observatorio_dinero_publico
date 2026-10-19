@@ -61,3 +61,21 @@ export function fmtCentavos(c: string | null): string {
 }
 export const fmtPct = (p: string | null) => (p === null ? '—' : `${nf2.format(Number(p) * 100)} %`)
 export const fmtInt = (n: number) => nf0.format(n)
+
+export type BalLine = {
+  etiqueta: string; valor_millones: string | null; estado: string; anterior_millones: string | null
+  var_nominal_pct: string | null; var_real_pct: string | null; nota?: string | null
+  flujo?: string; detalle?: BalLine[]; columna?: string
+}
+export type Balance = {
+  estado: string; ejercicio: number; periodo?: string; comparado_con?: string | null; universo?: string
+  base?: string; unidad?: string; unidad_real?: string | null; parcial?: boolean
+  cards: BalLine[]; grupos: BalLine[]; procedencia: Prov[]
+}
+export type Bridge = {
+  estado: string; ejercicio: number; motivo?: string; unidad?: string; advertencia?: string
+  filas?: { concepto: string; an_presupuesto_abierto: string; spnf_imig: string; diferencia: string }[]
+  causas_conocidas?: string[]; procedencia: Prov[]
+}
+export const fmtVar = (p: string | null) =>
+  p === null ? '—' : `${Number(p) > 0 ? '+' : ''}${nf2.format(Number(p))} %`

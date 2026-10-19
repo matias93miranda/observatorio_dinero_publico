@@ -36,6 +36,20 @@ Todas las pruebas se hicieron el 2026-10-19 desde Linux con `curl` y con los con
 - Recursos: solo 11x (corrientes) y 12x (capital). **No incluye fuentes financieras** (endeudamiento).
 - Gasto primario = gasto total − Σ económico `2131*` (intereses y primas). Verificado al centavo: 117.476.799,88051809 − 12.860.075,27082612 = 104.616.724,60969197 = `gasto_primario_devengado` publicado.
 
+## 1b. IMIG completo — balance fiscal oficial (conectado)
+
+| Ítem | Hallazgo |
+|---|---|
+| Archivo | https://infra.datos.gob.ar/catalog/sspm/dataset/452/distribution/452.3/download/imig-mensual.csv (sin token) |
+| Universo / base | Sector Público Nacional no Financiero, **caja**. Es el resultado fiscal oficial de la Secretaría de Hacienda |
+| Cobertura | 2016-01 → 2026-08 (128 meses), 53 columnas: 16 de ingresos, 31 de gasto primario, 3 de resultado, 2 PIP (meta FMI 2016-19, no usadas) |
+| Precisión | Mayormente 0,1 M$, algunos meses con más decimales y artefactos de float: se guarda el texto y para sumar se redondea a 1e-6 M$ (1 peso) |
+| Identidades | Σ ingresos − Σ gasto primario = resultado primario, y resultado primario − intereses netos = resultado financiero: **desvío 0 M$ en los 128 meses** (verificado en cada carga; si no cierra, la carga falla) |
+| 2025 | Ingresos 135.179.029,8 · gasto primario 123.409.811,1 · resultado primario 11.769.218,7 · intereses netos 10.315.399,6 · resultado financiero 1.453.819,1 (M$) |
+
+Puente 2025 con Presupuesto Abierto (AN): rentas de la propiedad 17.672.765,1 (AN) vs 4.740.825,3 (IMIG), diferencia +12,9 billones;
+gasto primario 113.379.962,1 (AN) vs 123.409.811,1 (IMIG), diferencia −10,0 billones. Resultado primario: 21.433.030,3 vs 11.769.218,7.
+
 ## 2. API Series de Tiempo (conectada)
 
 | Ítem | Hallazgo |
@@ -47,7 +61,6 @@ Todas las pruebas se hicieron el 2026-10-19 desde Linux con `curl` y con los con
 | Serie | id | Cobertura | Fuente original |
 |---|---|---|---|
 | IPC Nivel General Nacional, base dic-2016 | `148.3_INIVELNAL_DICI_M_26` | 2016-12 → 2026-08 | INDEC |
-| IMIG Resultado primario (mensual) | `452.3_RESULTADO_RIO_0_M_18_54` | 2016-01 → 2026-08 | Secretaría de Hacienda (SPNF, base caja) |
 | Recaudación tributaria total (mensual) | `172.3_TL_RECAION_M_0_0_17` | 1997-01 → 2026-09 | Secretaría de Hacienda / DNIAF (la descripción en el catálogo dice "Anuales", pero la serie es mensual) |
 
 ## 3. Fuentes accesibles, no conectadas

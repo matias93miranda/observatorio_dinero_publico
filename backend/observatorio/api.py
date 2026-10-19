@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import config, db, metrics, sync
+from . import balance, config, db, metrics, sync
 
 app = FastAPI(title="Observatorio del Dinero Público Argentino (API local)", version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -60,8 +60,10 @@ def coverage(con=Depends(get_con)):
 
 @app.get("/api/ejercicios")
 def ejercicios(con=Depends(get_con)):
-    return [r[0] for r in con.execute(
-        "SELECT DISTINCT ejercicio FROM fiscal_observation ORDER BY ejercicio DESC")]
+    rows = con.execute(
+        "SELECT DISTINCT ejercicio FROM fiscal_observation UNION SELECT DISTINCT CAST(substr(periodo,1,4) AS INT) "
+        "FROM series_observation WHERE series_id='imig.resultado_primario' ORDER BY 1 DESC")
+    return [r[0] for r in rows]
 
 
 @app.get("/api/summary")
@@ -69,6 +71,17 @@ def summary(ejercicio: int, scope: str = "administracion_nacional", con=Depends(
     if scope != "administracion_nacional":
         raise HTTPException(400, "Por ahora solo hay cobertura de la Administración Nacional")
     return metrics.summary(con, ejercicio)
+
+
+@app.get("/api/balance")
+def fiscal_balance(ejercicio: int, con=Depends(get_con)):
+    """Balance oficial: IMIG, Sector Público Nacional no Financiero, base caja."""
+    return balance.balance(con, ejercicio)
+
+
+@app.get("/api/bridge")
+def fiscal_bridge(ejercicio: int, con=Depends(get_con)):
+    return balance.bridge(con, ejercicio)
 
 
 @app.get("/api/expenditures")

@@ -6,3 +6,5 @@
 - `totales-encabezado.csv`: solo el encabezado real de `totales-de-presupuesto.zip`. Los tests completan filas
   **sintéticas** (calculadas desde las muestras) para probar la lógica de conciliación; no son cifras oficiales.
 - `serie-con-hueco.csv`: serie **sintética** con un período sin valor, para verificar que vacío ≠ 0.
+- `imig-muestra.csv`: encabezado + filas 2024-01..03 y 2025-01..03 de
+  https://infra.datos.gob.ar/catalog/sspm/dataset/452/distribution/452.3/download/imig-mensual.csv (2026-10-19), sin modificar.

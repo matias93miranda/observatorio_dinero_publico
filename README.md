@@ -4,8 +4,9 @@ Aplicación local (FastAPI + SQLite + React/ECharts) para estudiar ingresos, gas
 sector público argentino a partir de datos oficiales. Cada cifra conserva su procedencia: archivo crudo, SHA-256,
 URL, fecha de publicación de la fuente, universo, unidad y etapa contable.
 
-**Estado: fase 0 (2026-10-19).** Universo cubierto: **Administración Nacional**, ejercicios 2025 y 2026,
-además de IPC, IMIG y recaudación como series de referencia. Ver `docs/fase0_inventario_fuentes.md` y
+**Estado: fase 0 (2026-10-19).** **Balance oficial:** IMIG (Sector Público Nacional no Financiero, base caja, 2016–hoy), con
+comparación interanual nominal y real. **Detalle:** Presupuesto Abierto (Administración Nacional, 2025–2026) y cuadro puente
+entre ambos. Referencias: IPC y recaudación. Ver `docs/fase0_inventario_fuentes.md` y
 `docs/matriz_comparabilidad.md`. La especificación original está en `docs/ESPECIFICACION.md`.
 
 ## Requisitos
@@ -51,6 +52,7 @@ El token nunca va en el frontend.
 | Descomposición ≠ transferencia: los treemaps se rotulan así y `/api/transfers` queda vacío hasta tener evidencia | `metrics.breakdown`, `api.transfers` |
 
 ## Definiciones
+- **Balance oficial (IMIG)**: resultado primario = ingresos totales − gasto primario; resultado financiero = primario − intereses netos. Base caja, SPNF. Real: cada mes deflactado por su IPC.
 - **Gasto total**: gasto corriente + capital devengado de la AN (sin amortización de deuda ni gastos figurativos).
 - **Gasto primario**: gasto total − intereses y primas (clasificador económico `2131*`).
 - **Resultado primario** = recursos percibidos − gasto primario devengado. **Resultado financiero** = recursos percibidos − gasto total devengado.
@@ -59,7 +61,7 @@ El token nunca va en el frontend.
 
 ## API local (no oficial)
 `GET /api/health · /api/sources · /api/datasets · /api/coverage · /api/ejercicios ·
-/api/summary?ejercicio= · /api/expenditures?ejercicio=&classification=finalidad|funcion|jurisdiccion|inciso|programa|economico&etapa= ·
+/api/balance?ejercicio= · /api/bridge?ejercicio= · /api/summary?ejercicio= · /api/expenditures?ejercicio=&classification=finalidad|funcion|jurisdiccion|inciso|programa|economico&etapa= ·
 /api/revenues?ejercicio=&classification=tipo|clase · /api/transfers · /api/timeseries?metric=totales_anuales|<id_serie>&from=&to= ·
 /api/observations/{id}/provenance` · `POST /api/admin/sync`.
 

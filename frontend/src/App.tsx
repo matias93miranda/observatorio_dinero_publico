@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import ReactECharts from 'echarts-for-react'
 import {
   get, fmtMillones, fmtExacto, fmtCentavos, fmtPct, fmtInt,
-  type Summary, type Breakdown, type Annual, type Prov, type Card,
+  type Summary, type Breakdown, type Annual, type Prov, type Card, type Balance, type Bridge, type BalLine, fmtVar,
 } from './api'
 
 type Tab = 'inicio' | 'destinos' | 'evolucion' | 'fuentes'
@@ -69,21 +69,97 @@ function CardView({ c }: { c: Card }) {
   )
 }
 
-function Inicio({ ej }: { ej: number }) {
-  const { data, err } = useApi<Summary>('/api/summary', { ejercicio: ej })
+function BalCard({ c, cmp }: { c: BalLine; cmp: string | null | undefined }) {
+  const neg = c.valor_millones !== null && c.valor_millones.startsWith('-')
+  return (
+    <div className="card">
+      <div className="card-label">{c.etiqueta}</div>
+      <div className={'card-value' + (c.valor_millones === null ? ' nodata' : neg ? ' neg' : '')}>{fmtMillones(c.valor_millones)}</div>
+      <div className="card-meta">Exacto: {fmtExacto(c.valor_millones)}</div>
+      {cmp && <div className="card-meta">vs {cmp}: {fmtMillones(c.anterior_millones)}</div>}
+      {cmp && <div className="card-meta">Var. nominal {fmtVar(c.var_nominal_pct)} · <b>var. real {fmtVar(c.var_real_pct)}</b></div>}
+      {c.nota && <div className="card-meta">{c.nota}</div>}
+    </div>
+  )
+}
+
+function BalanceView({ ej }: { ej: number }) {
+  const { data, err } = useApi<Balance>('/api/balance', { ejercicio: ej })
   if (err) return <ErrorBox err={err} />
   if (!data) return <p>Cargando…</p>
-  const bad = data.conciliacion.filter(r => r.conclusion !== 'coincide')
+  if (data.estado !== 'ok') return <p className="nodata">Sin datos del IMIG para {ej}.</p>
   return (
     <>
-      <p className="scope">Universo: <b>{data.universo}</b> (Sector Público Nacional no Financiero). No incluye
-        empresas públicas, fondos fiduciarios fuera del presupuesto, PAMI, provincias ni municipios.</p>
-      <div className="cards">{data.cards.map(c => <CardView key={c.etiqueta} c={c} />)}</div>
-      <h3>Conciliación contra totales publicados</h3>
-      {bad.length === 0
-        ? <p className="ok">Las 9 medidas coinciden exactamente con <code>totales-de-presupuesto.csv</code>.</p>
-        : <p className="warn">{bad.length} de {data.conciliacion.length} comparaciones no coinciden o no tienen dato. Ver detalle.</p>}
-      <RecTable recs={data.conciliacion} />
+      <p className="scope">Universo: <b>{data.universo}</b> · base <b>{data.base}</b> · {data.periodo}.
+        Fuente: IMIG, Secretaría de Hacienda. Es el resultado fiscal oficial.
+        {data.parcial && ' Año en curso: se compara contra los mismos meses del año anterior.'}</p>
+      <div className="cards">{data.cards.map(c => <BalCard key={c.etiqueta} c={c} cmp={data.comparado_con} />)}</div>
+      <details>
+        <summary>Composición por grupo ({data.periodo})</summary>
+        <div className="tablewrap"><table>
+          <thead><tr><th>Concepto</th><th>Importe</th><th>{data.comparado_con ?? 'Anterior'}</th><th>Var. nominal</th><th>Var. real</th></tr></thead>
+          <tbody>{data.grupos.flatMap(g => [
+            <tr key={g.etiqueta} className="grp"><td><b>{g.etiqueta}</b> <span className="muted">({g.flujo})</span></td>
+              <td className="num">{fmtExacto(g.valor_millones)}</td><td className="num">{fmtExacto(g.anterior_millones)}</td>
+              <td className="num">{fmtVar(g.var_nominal_pct)}</td><td className="num">{fmtVar(g.var_real_pct)}</td></tr>,
+            ...(g.detalle ?? []).map(d => (
+              <tr key={g.etiqueta + d.columna}><td className="indent">{d.etiqueta}</td>
+                <td className="num">{fmtExacto(d.valor_millones)}</td><td className="num">{fmtExacto(d.anterior_millones)}</td>
+                <td className="num">{fmtVar(d.var_nominal_pct)}</td><td className="num">{fmtVar(d.var_real_pct)}</td></tr>)),
+          ])}</tbody>
+        </table></div>
+        <p className="note">Real: {data.unidad_real}.</p>
+      </details>
+      <details><summary>Procedencia</summary><ProvList prov={data.procedencia} /></details>
+    </>
+  )
+}
+
+function BridgeView({ ej }: { ej: number }) {
+  const { data, err } = useApi<Bridge>('/api/bridge', { ejercicio: ej })
+  if (err) return <ErrorBox err={err} />
+  if (!data) return null
+  if (data.estado !== 'ok') return <p className="note">{data.motivo}</p>
+  return (
+    <>
+      <div className="tablewrap"><table>
+        <thead><tr><th>Concepto</th><th>AN · Presupuesto Abierto (percibido/devengado)</th><th>SPNF · IMIG (caja)</th><th>Diferencia</th></tr></thead>
+        <tbody>{data.filas!.map(f => (
+          <tr key={f.concepto}><td>{f.concepto}</td><td className="num">{fmtExacto(f.an_presupuesto_abierto)}</td>
+            <td className="num">{fmtExacto(f.spnf_imig)}</td><td className="num">{fmtExacto(f.diferencia)}</td></tr>))}
+        </tbody>
+      </table></div>
+      <ul className="note">{data.causas_conocidas!.map((c, i) => <li key={i}>{c}</li>)}</ul>
+      <p className="warn">⚠ {data.advertencia}</p>
+    </>
+  )
+}
+
+function Inicio({ ej }: { ej: number }) {
+  const { data, err } = useApi<Summary>('/api/summary', { ejercicio: ej })
+  const bad = data?.conciliacion.filter(r => r.conclusion !== 'coincide') ?? []
+  const hasAN = data?.cards.some(c => c.estado === 'ok')
+  return (
+    <>
+      <h2>Balance fiscal oficial</h2>
+      <BalanceView ej={ej} />
+      <h2>Cuadro puente: Administración Nacional ↔ Sector Público Nacional no Financiero</h2>
+      <BridgeView ej={ej} />
+      <h2>Detalle presupuestario de la Administración Nacional</h2>
+      {err && <ErrorBox err={err} />}
+      {data && !hasAN && <p className="nodata">No hay ejecución presupuestaria cargada para {ej}.</p>}
+      {data && hasAN && (
+        <>
+          <p className="scope">Universo: <b>{data.universo}</b> (sin empresas públicas, fondos fiduciarios fuera del
+            presupuesto, PAMI, provincias ni municipios). Recursos percibidos y gastos devengados: <b>no</b> es el
+            resultado oficial y no se compara directamente con el balance de arriba.</p>
+          <div className="cards">{data.cards.map(c => <CardView key={c.etiqueta} c={c} />)}</div>
+          <h3>Conciliación contra totales publicados</h3>
+          {bad.length === 0
+            ? <p className="ok">Las 9 medidas coinciden exactamente con <code>totales-de-presupuesto.csv</code>.</p>
+            : <p className="warn">{bad.length} de {data.conciliacion.length} comparaciones no coinciden o no tienen dato. Ver detalle.</p>}
+          <RecTable recs={data.conciliacion} />
+        </>)}
     </>
   )
 }

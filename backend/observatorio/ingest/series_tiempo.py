@@ -27,11 +27,6 @@ SERIES = {
         "st_ipc_nacional", "IPC Nivel General Nacional, base dic-2016=100 (INDEC)",
         "índice dic-2016=100", "Total país (precios al consumidor)",
         "Deflactor para series reales. Disponible desde 2016-12."),
-    "452.3_RESULTADO_RIO_0_M_18_54": (
-        "st_imig_resultado_primario", "IMIG - Resultado primario mensual",
-        "millones de pesos corrientes", "Sector Público Nacional no Financiero",
-        "Base caja (Informe Mensual de Ingresos y Gastos, Secretaría de Hacienda). "
-        "Universo y base distintos de Presupuesto Abierto (AN, devengado/percibido): no comparar sin conciliar."),
     "172.3_TL_RECAION_M_0_0_17": (
         "st_recaudacion_total", "Recaudación tributaria total mensual",
         "millones de pesos corrientes", "Recaudación tributaria nacional (ARCA/DNIAF), bruta de coparticipación",

@@ -42,3 +42,8 @@ code { font-size: .8em; }
 a { color: var(--accent); }
 details { margin-top: 12px; }
 footer { margin-top: 32px; color: var(--muted); font-size: .8rem; border-top: 1px solid var(--line); padding-top: 8px; }
+h2 { font-size: 1.15rem; margin: 24px 0 8px; }
+h2:first-child { margin-top: 0; }
+.muted { color: var(--muted); font-weight: normal; }
+td.indent { padding-left: 24px; color: var(--muted); }
+tr.grp td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
