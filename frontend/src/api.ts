@@ -27,7 +27,22 @@ export type Annual = {
   ejercicio_vigente_parcial?: number; series: Record<string, Point[]>; procedencia: Prov[]
 }
 
+/** Versión publicada (sitio estático): las respuestas de la API están exportadas como JSON. */
+export const ESTATICO = import.meta.env.VITE_STATIC === '1'
+
+/** Misma regla que clave() en backend/observatorio/export_static.py. */
+export function clave(path: string, params: Record<string, string | number | undefined>): string {
+  const base = path.replace(/^\/api\//, '').replace(/\//g, '_')
+  const partes = Object.keys(params).filter(k => params[k] !== undefined).sort().map(k => `${k}=${params[k]}`)
+  return [base, ...partes].join('__').replace(/[^A-Za-z0-9_.=-]/g, '-')
+}
+
 export async function get<T>(path: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
+  if (ESTATICO) {
+    const r = await fetch(`${import.meta.env.BASE_URL}data/${clave(path, params)}.json`)
+    if (!r.ok) throw new Error('este dato no está incluido en la versión publicada')
+    return r.json()
+  }
   const q = new URLSearchParams()
   for (const [k, v] of Object.entries(params)) if (v !== undefined) q.set(k, String(v))
   const r = await fetch(`${path}${q.size ? '?' + q : ''}`)

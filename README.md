@@ -1,14 +1,23 @@
 # Observatorio del Dinero Público Argentino
 
-Aplicación local (FastAPI + SQLite + React/ECharts) para estudiar ingresos, gastos y resultados del
+Proyecto independiente (no es un sitio del Estado). Aplicación (FastAPI + SQLite + React/ECharts) para estudiar ingresos, gastos y resultados del
 sector público argentino a partir de datos oficiales. Cada cifra conserva su procedencia: archivo crudo, SHA-256,
 URL, fecha de publicación de la fuente, universo, unidad y etapa contable.
 
 **Estado: fase 0 + revisión de comparabilidad (2026-10-19).** **Balance oficial:** IMIG (Sector Público Nacional, base caja,
-2016–hoy), con comparación interanual nominal y real. **Detalle:** Presupuesto Abierto (Administración Nacional, 2025–2026).
+2016–hoy), con comparación interanual nominal y real. **Detalle:** Presupuesto Abierto (Administración Nacional, 2017–2026).
 **Cierre consolidado:** Cuenta de Inversión 2025 de la CGN (Cuadro 35, SPNF por subsector, devengado). **Puente cuantificado**
-AN → IMIG 2025 con el Boletín Fiscal 4T de la ONP. Notas metodológicas con cita verificada. Referencias: IPC y recaudación. Ver `docs/fase0_inventario_fuentes.md` y
+AN → IMIG 2017–2025 con los Boletines Fiscales 4T de la ONP. **Recorrido guiado** para público general ("de cada $100"). Notas metodológicas con cita verificada. Referencias: IPC y recaudación. Ver `docs/fase0_inventario_fuentes.md` y
 `docs/matriz_comparabilidad.md`. La especificación original está en `docs/ESPECIFICACION.md`.
+
+## Versión publicada
+
+**https://matias93miranda.github.io/observatorio_dinero_publico/**: sitio estático, sin servidor. El workflow
+`.github/workflows/publicar.yml` lo regenera cada lunes (y con el botón *Run workflow* en la pestaña Actions):
+descarga las fuentes oficiales, corre todas las pruebas con datos reales, exporta las respuestas de la API a JSON
+(`python -m observatorio.export_static`) y publica. Si una descarga o un control falla, no publica y queda online la
+versión anterior. Para generarlo a mano: `scripts/run_linux.sh sync`, después `export_static` y
+`VITE_STATIC=1 npx vite build --base=/observatorio_dinero_publico/`.
 
 ## Requisitos
 - Python ≥ 3.11 y Node ≥ 18 (probado con Python 3.13.2 y Node 24.16 en Linux).

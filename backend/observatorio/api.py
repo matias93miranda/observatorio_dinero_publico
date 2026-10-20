@@ -43,6 +43,15 @@ def health(con=Depends(get_con)):
     return {"ok": True, "db": str(config.DB_PATH), "corridas_ok": n}
 
 
+@app.get("/api/meta")
+def meta(con=Depends(get_con)):
+    """Cuándo se verificaron las fuentes por última vez (para mostrar en la página)."""
+    r = con.execute("SELECT MAX(finished_at) FROM ingestion_run WHERE status IN ('ok','unchanged')").fetchone()
+    fallas = con.execute("SELECT COUNT(DISTINCT dataset_id) FROM ingestion_run r WHERE status='failed' AND run_id = "
+                         "(SELECT MAX(run_id) FROM ingestion_run x WHERE x.dataset_id=r.dataset_id)").fetchone()[0]
+    return {"ultima_verificacion": r[0], "datasets_con_ultimo_intento_fallido": fallas}
+
+
 @app.get("/api/sources")
 def sources(con=Depends(get_con)):
     return [dict(r) for r in con.execute("SELECT * FROM source ORDER BY source_id")]

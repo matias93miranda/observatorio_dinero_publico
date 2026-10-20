@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { get, type Prov, type Nota } from './api'
+import { get, ESTATICO, type Prov, type Nota } from './api'
 
 export function useApi<T>(path: string, params: Record<string, string | number | undefined>) {
   const [data, setData] = useState<T | null>(null)
@@ -16,7 +16,8 @@ export function useApi<T>(path: string, params: Record<string, string | number |
 }
 
 export function ErrorBox({ err }: { err: string }) {
-  return <div className="error">No se pudo consultar la API local: {err}. ¿Está corriendo el backend?</div>
+  return <div className="error">{ESTATICO ? `No se pudo cargar: ${err}.`
+    : `No se pudo consultar la API local: ${err}. ¿Está corriendo el backend?`}</div>
 }
 
 export function ProvList({ prov }: { prov: Prov[] }) {

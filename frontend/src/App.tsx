@@ -4,7 +4,7 @@ import Recorrido from './Recorrido'
 import BridgeView from './Puente'
 import { useApi, ErrorBox, ProvList, useNotas, NotasRef, Metodologia } from './comun'
 import {
-  fmtMillones, fmtExacto, fmtCentavos, fmtPct, fmtInt,
+  ESTATICO, fmtMillones, fmtExacto, fmtCentavos, fmtPct, fmtInt,
   type Summary, type Breakdown, type Annual, type Prov, type Card, type Balance, type BalLine, fmtVar,
   type CuentaInversion, type Rec, type FilaCI,
 } from './api'
@@ -343,12 +343,17 @@ export default function App() {
     return () => window.removeEventListener('hashchange', h)
   }, [])
   const { data: ejs } = useApi<number[]>('/api/ejercicios', {})
+  const { data: meta } = useApi<{ ultima_verificacion: string | null }>('/api/meta', {})
   const ejercicio = ej ?? ejs?.[0] ?? null
   return (
     <div className="app">
       <header>
         <h1>Observatorio del Dinero Público Argentino</h1>
-        <p className="badge">Datos reales · copia local · fase 0</p>
+        <p className="badge">Datos oficiales{meta?.ultima_verificacion
+          ? ` · fuentes verificadas el ${new Date(meta.ultima_verificacion).toLocaleDateString('es-AR')}` : ''}
+          {ESTATICO ? '' : ' · copia local'}</p>
+        <p className="aviso">Proyecto independiente: no es un sitio del Estado. Todas las cifras salen de publicaciones
+          oficiales, con enlace a su fuente.</p>
       </header>
       <nav>
         {TABS.map(([t, l]) => <button key={t} className={t === tab ? 'active' : ''} onClick={() => setTab(t)}>{l}</button>)}
@@ -364,7 +369,7 @@ export default function App() {
           : tab === 'inicio' ? <Inicio ej={ejercicio} /> : tab === 'puente' ? <BridgeView ej={ejercicio} onEj={setEj} />
           : tab === 'cuenta' ? <CuentaInversionView ej={ejercicio} /> : <Destinos ej={ejercicio} />}
       </main>
-      <footer>Cifras en pesos corrientes salvo indicación. Cada valor enlaza a su archivo oficial.
+      <footer>{ESTATICO && <>Versión publicada: se regenera automáticamente desde las fuentes oficiales. </>}Cifras en pesos corrientes salvo indicación. Cada valor enlaza a su archivo oficial.
         Las descomposiciones por clasificador no son pagos rastreados a destinatarios.</footer>
     </div>
   )

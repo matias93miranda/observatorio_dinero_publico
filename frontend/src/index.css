@@ -199,3 +199,5 @@ summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
 .cuenta-txt { font-size: 1.1rem; line-height: 1.55; margin: 12px 0 0; }
 @media (max-width: 600px) { .mapa-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .mapa-num { font-size: 1.7rem; }
   .cuenta-ley { margin-left: 0; } }
+
+.aviso { color: var(--muted); font-size: .8rem; margin: -6px 0 10px; }
