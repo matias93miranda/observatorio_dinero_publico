@@ -228,11 +228,13 @@ def series_monthly(con, series_id: str, desde: str | None = None, hasta: str | N
             "procedencia": [provenance(con, dsid[0])]}
 
 
+OBS_TABLES = ("fiscal_observation", "series_observation", "published_total", "aif_observation", "published_figure")
+
+
 def coverage(con) -> list[dict]:
     return [provenance(con, r[0]) | {
-        "observaciones": con.execute("SELECT COUNT(*) FROM fiscal_observation WHERE dataset_id=?", (r[0],)).fetchone()[0]
-        + con.execute("SELECT COUNT(*) FROM series_observation WHERE dataset_id=?", (r[0],)).fetchone()[0]
-        + con.execute("SELECT COUNT(*) FROM published_total WHERE dataset_id=?", (r[0],)).fetchone()[0]}
+        "observaciones": sum(con.execute(f"SELECT COUNT(*) FROM {t} WHERE dataset_id=?", (r[0],)).fetchone()[0]
+                             for t in OBS_TABLES)}
         for r in con.execute("SELECT dataset_id FROM dataset ORDER BY dataset_id")]
 
 

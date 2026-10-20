@@ -31,6 +31,25 @@ SUBSECTORES = (
 )
 
 
+# Rótulos cortos para gráficos (el concepto completo va en la tabla).
+ROTULOS = {
+    "Resultado primario AN — cierre": "AN cierre", "Resultado financiero AN — cierre": "AN cierre",
+    "Revisión entre el corte provisorio del Boletín y el cierre": "Revisión de corte",
+    "Resultado primario AN — corte provisorio": "AN provisorio", "Resultado financiero AN — corte provisorio": "AN provisorio",
+    "Caja vs. devengado y otras diferencias de registro dentro de la AN (no descompuesto)": "Base caja (residual)",
+    "Resultado primario AN base caja, con todas las rentas": "AN caja",
+    "Resultado financiero AN base caja, con rentas e intereses brutos": "AN caja",
+    "Se excluyen las rentas percibidas del BCRA": "− Rentas BCRA",
+    "Se excluyen las rentas cobradas por el FGS y otros a otros entes públicos": "− Rentas FGS",
+    "Se excluyen los intereses que la AN paga a otros entes públicos": "+ Intereses intra-SP",
+    "Resultado primario AN base caja, nueva metodología": "AN caja s/rentas",
+    "Resultado financiero AN base caja, nueva metodología": "AN caja s/rentas",
+    "Aporte de INSSJyP, fondos fiduciarios, otros entes y empresas (por su resultado operativo)": "+ Resto SPN",
+    "Resultado primario SPN base caja (IMIG)": "SPN caja (IMIG)",
+    "Resultado financiero SPN base caja (IMIG)": "SPN caja (IMIG)",
+}
+
+
 def _m(c: int | None) -> str | None:
     return None if c is None else str(centavos_to_millones(c))
 
@@ -126,7 +145,7 @@ def puente(con: sqlite3.Connection, ej: int) -> dict:
 
     def paso(tipo, categoria, concepto, valor, fuente, notas=(), universo=None, base=None):
         return {"tipo": tipo, "categoria": categoria, "concepto": concepto, "valor": valor, "fuente": fuente,
-                "notas": list(notas), "universo": universo, "base": base}
+                "notas": list(notas), "universo": universo, "base": base, "rotulo": ROTULOS.get(concepto, categoria)}
 
     primario = _cadena([
         paso("punto_calculado", "punto de partida", "Resultado primario AN — cierre", pa["resultado_primario"], PA,

@@ -72,10 +72,32 @@ export type Balance = {
   base?: string; unidad?: string; unidad_real?: string | null; parcial?: boolean
   cards: BalLine[]; grupos: BalLine[]; procedencia: Prov[]
 }
+export type Paso = {
+  tipo: string; categoria: string; concepto: string; fuente: string; notas: string[]
+  universo: string | null; base: string | null; valor_millones: string | null; acumulado_millones: string | null; rotulo: string
+  advertencia?: string
+}
+export type Control = { control: string; estado: string; diferencia_millones: string | null; tolerancia_millones?: string; nota?: string | null }
+export type RentaFila = { fuente: string; universo: string; base: string; valor_millones: string | null; estado: string; nota: string | null }
 export type Bridge = {
-  estado: string; ejercicio: number; motivo?: string; unidad?: string; advertencia?: string
-  filas?: { concepto: string; an_presupuesto_abierto: string; spnf_imig: string; diferencia: string }[]
-  causas_conocidas?: string[]; procedencia: Prov[]
+  estado: string; ejercicio: number; motivo?: string; unidad?: string; faltan?: string[]
+  resultado_primario?: Paso[]; resultado_financiero?: Paso[]; controles?: Control[]
+  tipos?: Record<string, string>; comparacion_rentas?: RentaFila[]; procedencia: Prov[]
+}
+export type FilaCI = {
+  subsector: string; nombre: string; ingresos_totales: string | null; gastos_totales: string | null
+  intereses: string | null; rentas_propiedad: string | null; resultado_primario: string | null
+  resultado_financiero: string | null; contribuciones_figurativas: string | null; gastos_figurativos: string | null
+}
+export type CuentaInversion = {
+  estado: string; ejercicio: number; universo?: string; base?: string; unidad?: string; filas?: FilaCI[]
+  identidades?: Record<string, number>; celdas_con_error?: { celda: string; concepto: string; subsector: string; importe_original: string }[]
+  notas?: string[]; advertencia?: string; procedencia: Prov[]
+}
+export type Nota = {
+  nota_id: string; tema: string; aplica_a: string; vigencia_desde: string | null; vigencia_hasta: string | null
+  resumen: string; cita_textual: string | null; fuente_dataset_id: string | null; fuente_url: string
+  ubicacion: string | null; estado_verificacion: string; verificado_en: string
 }
 export const fmtVar = (p: string | null) =>
   p === null ? '—' : `${Number(p) > 0 ? '+' : ''}${nf2.format(Number(p))} %`

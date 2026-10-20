@@ -47,3 +47,8 @@ h2:first-child { margin-top: 0; }
 .muted { color: var(--muted); font-weight: normal; }
 td.indent { padding-left: 24px; color: var(--muted); }
 tr.grp td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.nota { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; margin: 8px 0; background: var(--card); }
+.nota summary { cursor: pointer; }
+.nota p { margin: 6px 0; }
+blockquote { margin: 6px 0; padding: 4px 12px; border-left: 3px solid var(--line); color: var(--muted); font-size: .88rem; }
+h3 { font-size: 1rem; margin: 20px 0 6px; }
