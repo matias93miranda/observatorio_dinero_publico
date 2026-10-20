@@ -1,4 +1,4 @@
-"""Balance fiscal oficial (IMIG, SPNF, base caja) y puente con Presupuesto Abierto."""
+"""Balance fiscal oficial (IMIG, Sector Público Nacional, base caja). El puente con la AN está en puente.py."""
 from __future__ import annotations
 
 import sqlite3
@@ -6,7 +6,6 @@ from decimal import Decimal
 
 from .ingest import imig
 from .metrics import pct_change, provenance
-from .money import centavos_to_millones
 
 IPC_ID = "148.3_INIVELNAL_DICI_M_26"
 MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
@@ -112,48 +111,3 @@ def balance(con: sqlite3.Connection, ejercicio: int) -> dict:
         "parcial": n < 12, "cards": cards, "grupos": grupos, "procedencia": prov,
     }
 
-
-def bridge(con: sqlite3.Connection, ejercicio: int) -> dict:
-    """Puente entre el balance oficial (IMIG) y la ejecución de la AN (Presupuesto Abierto).
-    Solo se arma para ejercicios cerrados con 12 meses de IMIG: con cortes distintos no son comparables."""
-    meses = months_available(con, ejercicio)
-    dg, dr = f"pa_credito_anual_{ejercicio}", f"pa_recursos_anual_{ejercicio}"
-    prov = [provenance(con, "imig_mensual"), provenance(con, dg), provenance(con, dr)]
-    has_pa = con.execute("SELECT 1 FROM fiscal_observation WHERE dataset_id=? LIMIT 1", (dg,)).fetchone()
-    if len(meses) < 12 or not has_pa:
-        return {"estado": "no_comparable", "ejercicio": ejercicio, "procedencia": prov,
-                "motivo": "El puente solo se arma con 12 meses de IMIG y el cierre de Presupuesto Abierto del "
-                          "mismo ejercicio. Con cortes distintos la diferencia mezclaría períodos."}
-
-    def pa_sum(ds, etapa, extra="", args=()):
-        c = con.execute(f"SELECT SUM(importe_centavos) FROM fiscal_observation WHERE dataset_id=? AND etapa=? {extra}",
-                        (ds, etapa, *args)).fetchone()[0]
-        return centavos_to_millones(c)
-
-    an_ing = pa_sum(dr, "percibido")
-    an_gp = pa_sum(dg, "devengado") - pa_sum(dg, "devengado", "AND economico LIKE '2131%'")
-    an_rentas = pa_sum(dr, "percibido", "AND recurso_tipo='16'")
-    s_ing, _ = _sum_cols(con, list(imig.INGRESOS), meses)
-    s_gp, _ = _sum_cols(con, list(imig.GASTOS_PRIMARIOS), meses)
-    s_rentas, _ = _sum_cols(con, [c for c, (g, _) in imig.INGRESOS.items() if g == "rentas"], meses)
-    filas = [
-        ("Ingresos totales", an_ing, s_ing),
-        ("  de los cuales: rentas de la propiedad", an_rentas, s_rentas),
-        ("Gasto primario", an_gp, s_gp),
-        ("Resultado primario", an_ing - an_gp, s_ing - s_gp),
-    ]
-    return {
-        "estado": "ok", "ejercicio": ejercicio, "unidad": imig.UNIDAD,
-        "filas": [{"concepto": c, "an_presupuesto_abierto": _q(a), "spnf_imig": _q(s), "diferencia": _q(a - s)}
-                  for c, a, s in filas],
-        "causas_conocidas": [
-            "Universo: el IMIG agrega al SPNF (AN + fondos fiduciarios, empresas y otros entes); Presupuesto Abierto cubre solo la AN.",
-            "Base: el IMIG es caja; Presupuesto Abierto registra gastos devengados y recursos percibidos.",
-            "Rentas de la propiedad: el IMIG solo computa rentas del FGS cobradas al sector privado y público financiero y "
-            "un 'resto'. Presupuesto Abierto registra todas las rentas percibidas por la AN, sin distinguir si el pagador es otro ente público.",
-            "Transferencias intra-SPNF (p.ej. AN → fondos fiduciarios) se consolidan en el IMIG y no en la AN.",
-        ],
-        "advertencia": "La diferencia no está descompuesta partida por partida: las causas listadas son cualitativas. "
-                       "Cuantificar cada una requiere fuentes adicionales (pendiente).",
-        "procedencia": prov,
-    }

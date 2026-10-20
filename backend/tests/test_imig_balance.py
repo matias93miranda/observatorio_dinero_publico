@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from conftest import FIX
 
-from observatorio import balance
+from observatorio import balance, puente
 from observatorio.ingest import imig
 from observatorio.ingest.base import run_ingestion
 
@@ -77,4 +77,4 @@ def test_celda_vacia_falla(env, tmp_path):
 
 def test_sin_datos(env):
     assert balance.balance(env, 2025)["estado"] == "sin_datos"
-    assert balance.bridge(env, 2025)["estado"] == "no_comparable"
+    assert puente.puente(env, 2025)["estado"] == "no_disponible"

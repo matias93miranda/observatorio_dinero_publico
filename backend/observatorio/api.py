@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import balance, config, db, metrics, sync
+from . import balance, config, db, metodologia, metrics, puente, sync
 
 app = FastAPI(title="Observatorio del Dinero Público Argentino (API local)", version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -81,7 +81,28 @@ def fiscal_balance(ejercicio: int, con=Depends(get_con)):
 
 @app.get("/api/bridge")
 def fiscal_bridge(ejercicio: int, con=Depends(get_con)):
-    return balance.bridge(con, ejercicio)
+    """Puente cuantificado: resultado de la AN (Presupuesto Abierto) -> resultado SPN base caja (IMIG)."""
+    return puente.puente(con, ejercicio)
+
+
+@app.get("/api/cuenta-inversion")
+def cuenta_inversion(ejercicio: int, con=Depends(get_con)):
+    """Cuenta AIF del SPNF por subsector (CGN, Cuadro 35). Devengado: no es el resultado oficial base caja."""
+    return puente.institucional(con, ejercicio)
+
+
+@app.get("/api/metodologia")
+def notas_metodologicas(con=Depends(get_con)):
+    return metodologia.listar(con)
+
+
+@app.get("/api/reconciliation")
+def reconciliation(prefix: str = Query(..., min_length=3), con=Depends(get_con)):
+    rows = con.execute("SELECT comparacion, total_calculado_centavos, total_publicado_centavos, diferencia_centavos, "
+                       "tolerancia_centavos, conclusion, checked_at FROM reconciliation WHERE comparacion LIKE ? "
+                       "ORDER BY rec_id", (prefix + "%",))
+    return [{k: (str(v) if k.endswith("_centavos") and v is not None else v) for k, v in dict(r).items()}
+            for r in rows]
 
 
 @app.get("/api/expenditures")

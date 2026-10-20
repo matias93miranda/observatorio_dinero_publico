@@ -14,6 +14,9 @@ ADV_RENTAS = ("Los recursos incluyen 'Rentas de la propiedad', que pueden conten
               "sector público (p.ej. utilidades del BCRA, rentas del FGS). La metodología del IMIG "
               "(Secretaría de Hacienda) los trata de otro modo: no comparar resultados entre fuentes "
               "sin conciliar.")
+ADV_PAGADO = ("Devengado − pagado = gasto devengado de este ejercicio que seguía impago a la fecha de corte del "
+              "archivo. No es el saldo de deuda flotante: ese stock incluye obligaciones de ejercicios anteriores, "
+              "cuyo pago no figura en estos archivos. Tampoco es ahorro. (nota: deuda_exigible_no_es_flotante)")
 BY_GASTO = {
     "finalidad": ("substr(finalidad_funcion,1,instr(finalidad_funcion,'.')-1)", "finalidad"),
     "funcion": ("finalidad_funcion", "finalidad_funcion"),
@@ -103,7 +106,7 @@ def summary(con: sqlite3.Connection, ejercicio: int) -> dict:
         _figure(gasto, etiqueta="Gasto total (corriente + capital)", etapa="devengado",
                 periodo=per, datasets=[dg], con=con),
         _figure(pagado, etiqueta="Gasto total pagado", etapa="pagado", periodo=per, datasets=[dg],
-                con=con, adv=["Pagado ≠ devengado: la diferencia es deuda flotante, no ahorro."]),
+                con=con, adv=[ADV_PAGADO]),
         _figure(interes, etiqueta="Intereses y primas de deuda", etapa="devengado", periodo=per,
                 datasets=[dg], con=con, formula="Σ clasificador económico 2131*"),
         _figure(primario, etiqueta="Gasto primario", etapa="devengado", periodo=per, datasets=[dg],

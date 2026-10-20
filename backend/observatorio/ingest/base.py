@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
+import ssl
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -44,6 +45,7 @@ class DatasetDef:
     cobertura_temporal: str | None = None
     granularidad: str | None = None
     metodologia: str | None = None
+    ca_extra: str | None = None  # certificado intermedio (en observatorio/certs) si el servidor no lo envía
 
 
 def register(con: sqlite3.Connection, ds: DatasetDef) -> None:
@@ -67,12 +69,25 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
-def download(url: str, dest: Path) -> None:
+CERTS_DIR = Path(__file__).resolve().parent.parent / "certs"
+
+
+def _ssl_context(ca_extra: str | None) -> ssl.SSLContext | None:
+    """Verificación TLS siempre activa; ca_extra solo agrega un intermedio documentado."""
+    if ca_extra is None:
+        return None
+    ctx = ssl.create_default_context()
+    ctx.load_verify_locations(CERTS_DIR / ca_extra)
+    return ctx
+
+
+def download(url: str, dest: Path, ca_extra: str | None = None) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(dest.suffix + ".part")
     req = urllib.request.Request(url, headers={"User-Agent": config.USER_AGENT})
     try:
-        with urllib.request.urlopen(req, timeout=config.HTTP_TIMEOUT) as r, open(tmp, "wb") as f:
+        with urllib.request.urlopen(req, timeout=config.HTTP_TIMEOUT,
+                                    context=_ssl_context(ca_extra)) as r, open(tmp, "wb") as f:
             if r.status != 200:
                 raise IngestError(f"HTTP {r.status} al descargar {url}")
             while chunk := r.read(1 << 20):
@@ -125,7 +140,7 @@ def fetch_artifact(con: sqlite3.Connection, ds: DatasetDef, run_id: int,
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(Path(local_file).read_bytes())
     else:
-        download(ds.url, dest)
+        download(ds.url, dest, ds.ca_extra)
     sha = sha256_file(dest)
     con.execute(
         "UPDATE ingestion_run SET sha256=? WHERE run_id=?", (sha, run_id))

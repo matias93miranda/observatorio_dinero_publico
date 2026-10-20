@@ -4,7 +4,7 @@ from pathlib import Path
 
 from . import config
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def now_iso() -> str:
@@ -26,6 +26,8 @@ def connect(path: Path | None = None) -> sqlite3.Connection:
 def init_db(con: sqlite3.Connection) -> None:
     sql = (Path(__file__).parent / "schema.sql").read_text(encoding="utf-8")
     con.executescript(sql)
-    if con.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0] == 0:
+    # Las tablas nuevas se crean con IF NOT EXISTS: una base v1 queda en v2 sin perder datos.
+    cur = con.execute("SELECT MAX(version) FROM schema_version").fetchone()[0]
+    if cur is None or cur < SCHEMA_VERSION:
         con.execute("INSERT INTO schema_version VALUES (?, ?)", (SCHEMA_VERSION, now_iso()))
     con.commit()

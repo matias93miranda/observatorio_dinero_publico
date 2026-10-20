@@ -1,5 +1,5 @@
 -- Esquema local del Observatorio del Dinero Público Argentino.
--- Versión 1. Cualquier cambio incompatible incrementa schema_version y agrega una migración.
+-- Versión 2 (v1 + tablas al final). Cualquier cambio incompatible incrementa schema_version y agrega una migración.
 --
 -- Convenciones:
 --  * Importes monetarios: INTEGER en centavos (exacto). Nunca REAL.
@@ -150,4 +150,64 @@ CREATE TABLE IF NOT EXISTS reconciliation (
     tolerancia_centavos INTEGER NOT NULL,
     conclusion          TEXT NOT NULL CHECK (conclusion IN ('coincide','discrepa','sin_dato')),
     checked_at          TEXT NOT NULL
+);
+
+-- ===== Versión 2 =====
+
+-- Celdas de cuadros contables publicados en planilla (p.ej. Cuenta de Inversión, Cuadro 35).
+-- Una fila = una celda del archivo oficial. No se corrige nada: un error de fórmula del archivo
+-- (#REF!) queda con estado 'error_formula' e importe NULL; una celda vacía, 'vacia' y NULL.
+CREATE TABLE IF NOT EXISTS aif_observation (
+    dataset_id          TEXT NOT NULL REFERENCES dataset(dataset_id),
+    run_id              INTEGER NOT NULL REFERENCES ingestion_run(run_id),
+    ejercicio           INTEGER NOT NULL,
+    cuadro              TEXT NOT NULL,
+    celda               TEXT NOT NULL,             -- coordenada en la planilla, p.ej. 'K52'
+    concepto_id         TEXT NOT NULL,             -- clave estable, p.ej. 'I.rentas_propiedad'
+    concepto            TEXT NOT NULL,             -- rótulo literal del archivo
+    subsector           TEXT NOT NULL,             -- columna institucional, p.ej. 'total_an'
+    universo            TEXT NOT NULL,
+    base_contable       TEXT NOT NULL,
+    importe_centavos    INTEGER,
+    importe_original    TEXT,                      -- repr del valor almacenado en el archivo
+    estado              TEXT NOT NULL CHECK (estado IN ('ok','vacia','error_formula')),
+    PRIMARY KEY (dataset_id, celda)
+);
+
+-- Cifras extraídas de publicaciones en PDF (p.ej. Boletín Fiscal de la ONP). El conector las
+-- lee del texto del PDF crudo por rótulo de fila; si el rótulo no aparece, la carga falla.
+CREATE TABLE IF NOT EXISTS published_figure (
+    dataset_id          TEXT NOT NULL REFERENCES dataset(dataset_id),
+    run_id              INTEGER NOT NULL REFERENCES ingestion_run(run_id),
+    figure_id           TEXT NOT NULL,
+    ejercicio           INTEGER NOT NULL,
+    periodo             TEXT NOT NULL,
+    universo            TEXT NOT NULL,
+    base_contable       TEXT NOT NULL,
+    concepto            TEXT NOT NULL,
+    valor_texto         TEXT NOT NULL,             -- tal como está impreso, p.ej. '11.976.386,7'
+    importe_centavos    INTEGER NOT NULL,
+    unidad              TEXT NOT NULL,
+    pagina              INTEGER NOT NULL,          -- página del PDF (1 = primera)
+    cuadro              TEXT,
+    linea_texto         TEXT NOT NULL,             -- línea completa de la que se extrajo
+    PRIMARY KEY (dataset_id, figure_id)
+);
+
+-- Criterios contables y cambios metodológicos, con cita textual y ubicación en la fuente.
+CREATE TABLE IF NOT EXISTS metodologia_nota (
+    nota_id             TEXT PRIMARY KEY,
+    tema                TEXT NOT NULL,
+    aplica_a            TEXT NOT NULL,             -- fuentes/indicadores afectados
+    vigencia_desde      TEXT,
+    vigencia_hasta      TEXT,
+    resumen             TEXT NOT NULL,
+    cita_textual        TEXT,
+    fuente_dataset_id   TEXT,                      -- crudo donde se verifica la cita
+    fuente_url          TEXT NOT NULL,
+    ubicacion           TEXT,                      -- página / cuadro / sección
+    estado_verificacion TEXT NOT NULL CHECK (estado_verificacion IN
+                            ('verificada_en_crudo','no_encontrada_en_crudo','crudo_no_disponible',
+                             'hallazgo_reproducible')),  -- hallazgo: sin cita, con procedimiento
+    verificado_en       TEXT
 );

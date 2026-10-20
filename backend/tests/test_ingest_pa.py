@@ -79,7 +79,7 @@ def test_celda_vacia_falla_no_se_vuelve_cero(env, tmp_path):
 def test_descarga_fallida_registra_error(env, monkeypatch):
     from observatorio.ingest import base
     ds = pa.credito_def(1900)  # URL inexistente
-    def boom(url, dest):
+    def boom(url, dest, ca_extra=None):
         raise base.IngestError(f"No se pudo descargar {url}: HTTP Error 404")
     monkeypatch.setattr(base, "download", boom)
     res = run_ingestion(env, ds, partial(pa.load_credito, ds=ds))
