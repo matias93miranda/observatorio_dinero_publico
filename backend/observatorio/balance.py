@@ -100,6 +100,7 @@ def balance(con: sqlite3.Connection, ejercicio: int) -> dict:
             cols = [c for c, (gg, _) in mapping.items() if gg == g]
             item = linea(imig.GRUPOS[g], cols)
             item["flujo"] = flujo
+            item["grupo"] = g
             item["detalle"] = [linea(mapping[c][1], [c]) | {"columna": c} for c in cols]
             grupos.append(item)
     return {

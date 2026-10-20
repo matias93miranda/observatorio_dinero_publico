@@ -66,10 +66,11 @@ export type BalLine = {
   etiqueta: string; valor_millones: string | null; estado: string; anterior_millones: string | null
   var_nominal_pct: string | null; var_real_pct: string | null; nota?: string | null
   flujo?: string; detalle?: BalLine[]; columna?: string
+  real_millones?: string | null; anterior_real_millones?: string | null; grupo?: string
 }
 export type Balance = {
   estado: string; ejercicio: number; periodo?: string; comparado_con?: string | null; universo?: string
-  base?: string; unidad?: string; unidad_real?: string | null; parcial?: boolean
+  base?: string; unidad?: string; unidad_real?: string | null; parcial?: boolean; meses?: string[]
   cards: BalLine[]; grupos: BalLine[]; procedencia: Prov[]
 }
 export type Paso = {
@@ -83,7 +84,17 @@ export type Bridge = {
   estado: string; ejercicio: number; motivo?: string; unidad?: string; faltan?: string[]
   resultado_primario?: Paso[]; resultado_financiero?: Paso[]; controles?: Control[]
   tipos?: Record<string, string>; comparacion_rentas?: RentaFila[]; procedencia: Prov[]
+  partida_es_cierre?: boolean; deflactor?: Deflactor | null
 }
+export type Deflactor = { base: number; factor: string; unidad_real: string; metodo: string }
+export type HistRes = { partida_millones: string | null; llegada_millones: string | null; componentes: Record<string, string | null> }
+export type HistFila = {
+  ejercicio: number; estado: string; faltan?: string[]; partida_es_cierre?: boolean; deflactor?: Deflactor | null
+  ingresos_imig_millones?: string | null
+  controles_discrepan?: number; controles_total?: number
+  resultado_primario?: HistRes; resultado_financiero?: HistRes
+}
+export type Historico = { unidad: string; componentes: Record<string, string>; ejercicios: HistFila[] }
 export type FilaCI = {
   subsector: string; nombre: string; ingresos_totales: string | null; gastos_totales: string | null
   intereses: string | null; rentas_propiedad: string | null; resultado_primario: string | null
@@ -101,3 +112,13 @@ export type Nota = {
 }
 export const fmtVar = (p: string | null) =>
   p === null ? '—' : `${Number(p) > 0 ? '+' : ''}${nf2.format(Number(p))} %`
+
+/** millones (número) -> "$ 11,8 billones" con un decimal: para titulares; el exacto va en tablas y tooltips. */
+export function fmtCorto(n: number | null): string {
+  if (n === null || Number.isNaN(n)) return 'sin datos'
+  const a = Math.abs(n), sg = n < 0 ? '−' : ''
+  const f = (x: number) => new Intl.NumberFormat('es-AR', { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(x)
+  if (a >= 1e6) return `${sg}$ ${f(a / 1e6)} billones`
+  if (a >= 1e3) return `${sg}$ ${f(a / 1e3)} mil millones`
+  return `${sg}$ ${f(a)} millones`
+}

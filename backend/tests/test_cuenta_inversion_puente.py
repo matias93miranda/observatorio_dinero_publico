@@ -310,3 +310,18 @@ def test_api_puente_cuenta_inversion_metodologia(env, monkeypatch):
     assert len(c.get("/api/metodologia").json()) == len(metodologia.NOTAS)
     rec = c.get("/api/reconciliation", params={"prefix": "ci35:2025:"}).json()
     assert rec and all(isinstance(r["diferencia_centavos"], (str, type(None))) for r in rec)
+    h = c.get("/api/bridge/historico").json()
+    assert [f["ejercicio"] for f in h["ejercicios"]] == [2025] and h["ejercicios"][0]["estado"] == "ok"
+    f = h["ejercicios"][0]["resultado_primario"]
+    assert f["llegada_millones"] == "11769218.7" and f["componentes"]["bcra"] == "-11976386.7"
+    assert f["componentes"]["intra_sp"] is None   # solo existe en el resultado financiero: vacío, no 0
+    assert 2025 in c.get("/api/ejercicios").json()
+
+
+def test_deflactor_solo_con_ipc_completo(env, monkeypatch):
+    """Sin 12 meses de IPC no hay pesos constantes (vacío, no se extrapola); con IPC, factor = base / año."""
+    assert puente.deflactor(env, 2025) is None
+    monkeypatch.setattr(puente, "ipc_annual_avg", lambda con: {2024: Decimal(100), 2025: Decimal(150)})
+    d = puente.deflactor(env, 2024)
+    assert d["base"] == 2025 and d["factor"] == "1.500000"
+    assert puente.deflactor(env, 2023) is None

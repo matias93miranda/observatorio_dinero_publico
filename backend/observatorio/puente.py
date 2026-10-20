@@ -15,7 +15,7 @@ import sqlite3
 from decimal import Decimal
 
 from .ingest import imig
-from .metrics import provenance
+from .metrics import ipc_annual_avg, provenance
 from .money import centavos_to_millones
 from .sync import INTERESES_PREFIX
 
@@ -256,7 +256,8 @@ def puente(con: sqlite3.Connection, ej: int) -> dict:
             "diferencia_derivada": "Diferencia entre dos cifras publicadas (revisión entre cortes)",
             "residual": "Diferencia no descompuesta: las fuentes disponibles no la abren por concepto",
         },
-        "comparacion_rentas": _rentas(pa, ci, bol, im),
+        "comparacion_rentas": _rentas(pa, ci, bol, im), "deflactor": deflactor(con, ej),
+        "imig_ingresos_millones": _m(im["ingresos"]),
         "faltan": faltan, "procedencia": prov,
     }
 
@@ -317,3 +318,49 @@ def institucional(con: sqlite3.Connection, ej: int) -> dict:
                         "ingresos y gastos; en el IMIG, las empresas solo por su resultado operativo."),
         "procedencia": prov,
     }
+
+
+def deflactor(con: sqlite3.Connection, ej: int) -> dict | None:
+    """Factor para expresar un flujo anual en pesos promedio del último año con IPC completo.
+
+    Aproximación: se aplica el promedio anual del IPC a todo el flujo (los pasos del puente son anuales y no
+    tienen apertura mensual). El balance del IMIG, que sí es mensual, deflacta mes a mes y puede diferir.
+    """
+    ipc = ipc_annual_avg(con)
+    if not ipc or ej not in ipc:
+        return None
+    base = max(ipc)
+    return {"base": base, "factor": str((ipc[base] / ipc[ej]).quantize(Decimal("0.000001"))),
+            "unidad_real": f"millones de pesos promedio de {base}",
+            "metodo": "IPC Nivel General Nacional (INDEC), promedio de 12 meses; mismo factor para todos los pasos "
+                      "del año (aproximación: el balance mensual del IMIG deflacta mes a mes)."}
+
+
+# Componentes del puente para la comparación entre años (por rótulo corto de cada paso).
+COMPONENTES = (
+    ("revision", "Revisión de corte"), ("base", "Base caja (residual)"), ("bcra", "− Rentas BCRA"),
+    ("fgs", "− Rentas FGS"), ("intra_sp", "+ Intereses intra-SP"), ("resto", "+ Resto SPN"),
+)
+
+
+def historico(con: sqlite3.Connection) -> dict:
+    """Resumen del puente de cada ejercicio con Boletín del 4º trimestre cargado. Pesos corrientes + factor real."""
+    anios = sorted(int(r[0][len("onp_boletin_"):-3]) for r in con.execute(
+        "SELECT DISTINCT dataset_id FROM published_figure WHERE dataset_id LIKE 'onp_boletin_%_t4'"))
+    out = []
+    for ej in anios:
+        p = puente(con, ej)
+        if p["estado"] != "ok":
+            out.append({"ejercicio": ej, "estado": p["estado"], "faltan": p["faltan"]})
+            continue
+        fila = {"ejercicio": ej, "estado": "ok", "partida_es_cierre": p["partida_es_cierre"],
+                "deflactor": p["deflactor"], "ingresos_imig_millones": p["imig_ingresos_millones"],
+                "controles_discrepan": sum(c["estado"] != "coincide" for c in p["controles"]),
+                "controles_total": len(p["controles"])}
+        for res in ("resultado_primario", "resultado_financiero"):
+            pasos = p[res]
+            por_rotulo = {x["rotulo"]: x["valor_millones"] for x in pasos if not x["tipo"].startswith("punto")}
+            fila[res] = {"partida_millones": pasos[0]["valor_millones"], "llegada_millones": pasos[-1]["valor_millones"],
+                         "componentes": {k: por_rotulo.get(r) for k, r in COMPONENTES}}
+        out.append(fila)
+    return {"unidad": "millones de pesos corrientes", "componentes": dict(COMPONENTES), "ejercicios": out}

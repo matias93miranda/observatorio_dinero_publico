@@ -60,8 +60,11 @@ def coverage(con=Depends(get_con)):
 
 @app.get("/api/ejercicios")
 def ejercicios(con=Depends(get_con)):
+    # Por dataset (usa el índice) y no DISTINCT sobre fiscal_observation: con 2017-2026 son >1 millón de filas.
     rows = con.execute(
-        "SELECT DISTINCT ejercicio FROM fiscal_observation UNION SELECT DISTINCT CAST(substr(periodo,1,4) AS INT) "
+        "SELECT CAST(substr(d.dataset_id, 18) AS INT) FROM dataset d WHERE d.dataset_id LIKE 'pa_credito_anual_%' "
+        "AND EXISTS (SELECT 1 FROM fiscal_observation f WHERE f.dataset_id=d.dataset_id) "
+        "UNION SELECT DISTINCT CAST(substr(periodo,1,4) AS INT) "
         "FROM series_observation WHERE series_id='imig.resultado_primario' ORDER BY 1 DESC")
     return [r[0] for r in rows]
 
@@ -83,6 +86,12 @@ def fiscal_balance(ejercicio: int, con=Depends(get_con)):
 def fiscal_bridge(ejercicio: int, con=Depends(get_con)):
     """Puente cuantificado: resultado de la AN (Presupuesto Abierto) -> resultado SPN base caja (IMIG)."""
     return puente.puente(con, ejercicio)
+
+
+@app.get("/api/bridge/historico")
+def fiscal_bridge_historico(con=Depends(get_con)):
+    """Componentes del puente de cada ejercicio con Boletín Fiscal del 4º trimestre cargado."""
+    return puente.historico(con)
 
 
 @app.get("/api/cuenta-inversion")
