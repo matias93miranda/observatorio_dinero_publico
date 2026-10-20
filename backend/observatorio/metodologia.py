@@ -138,6 +138,25 @@ NOTAS = (
          fuente_url=CI35_URL,
          ubicacion=("Reproducir: comparar la columna E (Total AN) del Cuadro 35 con la suma de credito-anual-2025 y "
                     "recursos-anual-2025; ver conciliaciones 'cruce:2025:*'")),
+    Nota("cortes_an_sin_ci",
+         tema="Sin Cuenta de Inversión conectada, no se sabe qué corte de la AN es el cierre",
+         aplica_a="Puente AN → IMIG de los ejercicios sin Cuadro 35 cargado",
+         resumen=("La diferencia entre el detalle de Presupuesto Abierto y el Boletín Fiscal del 4º trimestre se "
+                  "muestra como diferencia entre dos cortes publicados. Solo en 2025 se verificó (contra la Cuenta "
+                  "de Inversión) que el detalle de Presupuesto Abierto es el cierre; en los demás años no se afirma."),
+         fuente_url=BOLETIN_URL,
+         ubicacion="Reproducir: /api/bridge?ejercicio=AAAA devuelve partida_es_cierre=false"),
+    Nota("boletin_2022_rentas_emisiones_primarias",
+         tema="Rentas de la propiedad 2022 de la AN incluyen las asociadas a emisiones primarias del Tesoro",
+         aplica_a="Boletín Fiscal 4T-2022, cuadro 1 (AN, recaudado/devengado)",
+         desde="2022", hasta="2022",
+         resumen=("En 2022 las rentas de la propiedad percibidas por la AN contemplan las asociadas a emisiones "
+                  "primarias del Tesoro (primas de colocación). Inflan la fila de rentas frente a otros años; no "
+                  "son rentas del BCRA ni del FGS."),
+         cita="Las rentas de la propiedad percibidas contemplan aquellas asociadas a emisiones primarias del Tesoro Nacional.",
+         dataset="onp_boletin_2022_t4",
+         fuente_url="https://www.mecon.gob.ar/onp/documentos/boletin/4totrim22/4totrim22.pdf",
+         ubicacion="Boletín Fiscal 4T-2022, p. 63 (nota (1) al cuadro 1)"),
     Nota("universo_imig_vs_ci",
          tema="Universos distintos: SPN base caja (IMIG) y SPNF de la Cuenta de Inversión",
          aplica_a="IMIG, Boletín Fiscal cuadros 4-5, Cuenta de Inversión Cuadro 35",

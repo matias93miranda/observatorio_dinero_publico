@@ -14,6 +14,10 @@
 - `boletin-4t2025-paginas.pdf`: Boletín Fiscal 4º trimestre 2025 (ONP) con las páginas 5, 6, 33, 57, 61 y 62 originales
   y las demás reemplazadas por páginas en blanco (para conservar la numeración), de
   https://www.mecon.gob.ar/onp/documentos/boletin/4totrim25/4totrim25.pdf (2026-10-19).
+- `boletin-4t2022-paginas.pdf`: Boletín Fiscal 4º trimestre 2022 con las páginas 63, 67 y 68 originales (cuadros 1, 4 y 5)
+  y las demás en blanco, de https://www.mecon.gob.ar/onp/documentos/boletin/4totrim22/4totrim22.pdf (2026-10-20;
+  SHA-256 del original `8b92de3854f093e3bb907b988ba1782ebda60cdc494cfa36127ce1e6ebd01641`). Cubre las variantes de rótulo
+  de 2017-2022 y la nota (1) sobre emisiones primarias.
 - `cgn-metodologia-spnf-2025.pdf`: Gestión Financiera Consolidada, aspectos generales y metodológicos, Cuenta de Inversión
   2025, de https://www.argentina.gob.ar/sites/default/files/gestion-financiera-consolidada_aspectos_generales_y_metodologicos-tomoi-2025.pdf, sin modificar.
 - En `test_cuenta_inversion_puente.py`, `insert_pa_sintetico` arma 4 líneas **sintéticas** de Presupuesto Abierto con los

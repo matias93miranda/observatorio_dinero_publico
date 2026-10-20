@@ -29,9 +29,28 @@ def load_c35(con, path=C35):
     return run_ingestion(con, d, ci.make_loader(2025, d), local_file=path)
 
 
-def load_bol(con, path=BOL):
-    d = bf.dataset_def(2025, 4)
-    return run_ingestion(con, d, bf.make_loader(2025, 4, d), local_file=path)
+BOL22 = FIX / "boletin-4t2022-paginas.pdf"
+
+
+def load_bol(con, path=BOL, ej=2025):
+    d = bf.dataset_def(ej, 4)
+    return run_ingestion(con, d, bf.make_loader(ej, 4, d), local_file=path)
+
+
+def test_boletin_2022_rotulos_de_otra_redaccion(env):
+    """2017-2022 abrevian 'Superávit Oper.' y 2022 agrega '(1)' a las rentas: se toman del registro por año."""
+    assert load_bol(env, BOL22, 2022)["status"] == "ok"
+    f = dict(env.execute("SELECT figure_id, valor_texto FROM published_figure WHERE dataset_id='onp_boletin_2022_t4'"))
+    assert len(f) == 24
+    assert f["an_dev.rentas_propiedad"] == "875.821,0"
+    assert f["spn_caja.superavit_operativo_empresas"] == "0,0"
+    assert f["an_caja.rentas_bcra"] == "0,0"   # en 2022 el BCRA no transfirió rentas: cero publicado, no vacío
+
+
+def test_boletin_de_un_anio_no_sirve_para_otro(env):
+    """Las marcas incluyen el año: el PDF de 2022 cargado como 2025 falla y no deja cifras."""
+    res = load_bol(env, BOL22, 2025)
+    assert res["status"] == "failed" and "cambió la estructura" in res["error"]
 
 
 def cell(con, celda):
@@ -166,6 +185,7 @@ def test_boletin_estructura_inesperada_falla(env, monkeypatch):
 
 def test_citas_metodologicas_verificadas_en_crudo(env, monkeypatch):
     load_bol(env)
+    load_bol(env, BOL22, 2022)
     run_ingestion(env, ci.metodologia_def(2025), ci.load_documento, local_file=CGN_PDF)
     estados = {r["nota_id"]: r["estado_verificacion"] for r in metodologia.refresh(env)}
     for n in metodologia.NOTAS:

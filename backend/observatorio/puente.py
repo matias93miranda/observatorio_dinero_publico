@@ -34,6 +34,8 @@ SUBSECTORES = (
 # Rótulos cortos para gráficos (el concepto completo va en la tabla).
 ROTULOS = {
     "Resultado primario AN — cierre": "AN cierre", "Resultado financiero AN — cierre": "AN cierre",
+    "Resultado primario AN — detalle de Presupuesto Abierto": "AN (PA)",
+    "Resultado financiero AN — detalle de Presupuesto Abierto": "AN (PA)",
     "Revisión entre el corte provisorio del Boletín y el cierre": "Revisión de corte",
     "Resultado primario AN — corte provisorio": "AN provisorio", "Resultado financiero AN — corte provisorio": "AN provisorio",
     "Caja vs. devengado y otras diferencias de registro dentro de la AN (no descompuesto)": "Base caja (residual)",
@@ -137,6 +139,12 @@ def puente(con: sqlite3.Connection, ej: int) -> dict:
                 "motivo": "El puente cuantificado necesita el cierre de Presupuesto Abierto, el Boletín Fiscal del "
                           "4º trimestre y los 12 meses del IMIG del mismo ejercicio."}
 
+    # El detalle de PA solo se llama "cierre" si la Cuenta de Inversión del mismo año lo confirma.
+    es_cierre = ci is not None
+    corte = "cierre" if es_cierre else "detalle de Presupuesto Abierto"
+    n_corte = ["cortes_an_2025"] if ej == 2025 else ([] if es_cierre else ["cortes_an_sin_ci"])
+    n_bcra = ["caja_spn_2017_rentas_intra_sp"] + (["bcra_utilidades_2025"] if ej == 2025 else [])
+    n_rentas_dev = ["boletin_2022_rentas_emisiones_primarias"] if ej == 2022 else []
     rp_caja_con_rentas = bol["an_caja.resultado_primario_sin_rentas"] + bol["an_caja.rentas_bcra"] + bol["an_caja.rentas_fgs_y_otros"]
     rf_caja_bruto = (bol["an_caja.resultado_financiero"] + bol["an_caja.rentas_bcra"] + bol["an_caja.rentas_fgs_y_otros"]
                      - bol["an_caja.intereses_intra_sp"])
@@ -148,23 +156,23 @@ def puente(con: sqlite3.Connection, ej: int) -> dict:
                 "notas": list(notas), "universo": universo, "base": base, "rotulo": ROTULOS.get(concepto, categoria)}
 
     primario = _cadena([
-        paso("punto_calculado", "punto de partida", "Resultado primario AN — cierre", pa["resultado_primario"], PA,
+        paso("punto_calculado", "punto de partida", f"Resultado primario AN — {corte}", pa["resultado_primario"], PA,
              ["an_metodologia_habitual"], "Administración Nacional", "percibido / devengado"),
         paso("diferencia_derivada", "corte de publicación (revisión)",
              "Revisión entre el corte provisorio del Boletín y el cierre",
-             bol["an_dev.resultado_primario"] - pa["resultado_primario"], f"{B1} − {PA}", ["cortes_an_2025"]),
+             bol["an_dev.resultado_primario"] - pa["resultado_primario"], f"{B1} − {PA}", n_corte),
         paso("punto_publicado", "punto intermedio", "Resultado primario AN — corte provisorio",
              bol["an_dev.resultado_primario"], B1, [], "Administración Nacional", "recaudado / devengado"),
         paso("residual", "base contable",
              "Caja vs. devengado y otras diferencias de registro dentro de la AN (no descompuesto)",
              rp_caja_con_rentas - bol["an_dev.resultado_primario"], f"{B5} − {B1}",
-             ["boletin_momentos_registro", "deuda_exigible_no_es_flotante"]),
+             ["boletin_momentos_registro", "deuda_exigible_no_es_flotante"] + n_rentas_dev),
         paso("punto_derivado", "punto intermedio", "Resultado primario AN base caja, con todas las rentas",
              rp_caja_con_rentas, f"{B5}: resultado sin rentas + rentas BCRA + rentas FGS y otros", [],
              "Administración Nacional", "caja"),
         paso("ajuste_publicado", "rentas de la propiedad: BCRA (criterio metodológico)",
              "Se excluyen las rentas percibidas del BCRA", -bol["an_caja.rentas_bcra"], B5,
-             ["caja_spn_2017_rentas_intra_sp", "bcra_utilidades_2025"]),
+             n_bcra),
         paso("ajuste_publicado", "operaciones intra-sector público: rentas del FGS y otros",
              "Se excluyen las rentas cobradas por el FGS y otros a otros entes públicos",
              -bol["an_caja.rentas_fgs_y_otros"], B5, ["caja_spn_2017_rentas_intra_sp"]),
@@ -177,11 +185,11 @@ def puente(con: sqlite3.Connection, ej: int) -> dict:
              bol["spn_caja.resultado_primario"], B5, [], "Sector Público Nacional", "caja"),
     ])
     financiero = _cadena([
-        paso("punto_calculado", "punto de partida", "Resultado financiero AN — cierre", pa["resultado_financiero"], PA,
+        paso("punto_calculado", "punto de partida", f"Resultado financiero AN — {corte}", pa["resultado_financiero"], PA,
              ["an_metodologia_habitual"], "Administración Nacional", "percibido / devengado"),
         paso("diferencia_derivada", "corte de publicación (revisión)",
              "Revisión entre el corte provisorio del Boletín y el cierre",
-             bol["an_dev.resultado_financiero"] - pa["resultado_financiero"], f"{B1} − {PA}", ["cortes_an_2025"]),
+             bol["an_dev.resultado_financiero"] - pa["resultado_financiero"], f"{B1} − {PA}", n_corte),
         paso("punto_publicado", "punto intermedio", "Resultado financiero AN — corte provisorio",
              bol["an_dev.resultado_financiero"], B1, [], "Administración Nacional", "recaudado / devengado"),
         paso("residual", "base contable",
@@ -192,7 +200,7 @@ def puente(con: sqlite3.Connection, ej: int) -> dict:
              "Administración Nacional", "caja"),
         paso("ajuste_publicado", "rentas de la propiedad: BCRA (criterio metodológico)",
              "Se excluyen las rentas percibidas del BCRA", -bol["an_caja.rentas_bcra"], B5,
-             ["caja_spn_2017_rentas_intra_sp", "bcra_utilidades_2025"]),
+             n_bcra),
         paso("ajuste_publicado", "operaciones intra-sector público: rentas del FGS y otros",
              "Se excluyen las rentas cobradas por el FGS y otros a otros entes públicos",
              -bol["an_caja.rentas_fgs_y_otros"], B5, ["caja_spn_2017_rentas_intra_sp"]),
@@ -208,11 +216,14 @@ def puente(con: sqlite3.Connection, ej: int) -> dict:
              bol["spn_caja.resultado_financiero"], B5, [], "Sector Público Nacional", "caja"),
     ])
     T = UNIDAD_PUB
+    # 12 meses redondeados a 0,1 M$ contra un total anual redondeado: hasta 13 medias unidades.
+    T_IMIG = 13 * T // 2
+    nota_imig = "Tolerancia 0,65 M$: suma de 12 cifras mensuales redondeadas a 0,1 M$ contra un total redondeado."
     controles = [
         _check("Llegada del puente = resultado primario del IMIG (suma de 12 meses)",
-               bol["spn_caja.resultado_primario"], im["resultado_primario"], T),
+               bol["spn_caja.resultado_primario"], im["resultado_primario"], T_IMIG, nota_imig),
         _check("Llegada del puente = resultado financiero del IMIG (suma de 12 meses)",
-               bol["spn_caja.resultado_financiero"], im["resultado_financiero"], T),
+               bol["spn_caja.resultado_financiero"], im["resultado_financiero"], T_IMIG, nota_imig),
         _check("Boletín: AN + resto = SPN (resultado primario, publicados por separado)",
                bol["an_caja.resultado_primario_sin_rentas"] + bol["resto_caja.resultado_primario"],
                bol["spn_caja.resultado_primario"], 2 * T),
@@ -223,9 +234,10 @@ def puente(con: sqlite3.Connection, ej: int) -> dict:
         _check("Intereses AN: netos de caja + intra-SP = intereses devengados del cuadro 1",
                bol["an_caja.intereses_netos"] + bol["an_caja.intereses_intra_sp"], bol["an_dev.intereses"], 2 * T,
                "Si coincide, el residual de base del resultado financiero es igual al del primario."),
-        _check("Intereses intra-SP pagados (AN + resto) = rentas cobradas por el FGS y otros",
+        _check("Intereses intra-SP pagados = rentas cobradas por el FGS y otros (AN + resto, ambos lados)",
                bol["an_caja.intereses_intra_sp"] + bol["resto_caja.intereses_intra_sp"],
-               bol["an_caja.rentas_fgs_y_otros"], 2 * T, "Las dos caras de la misma operación intra-sector público."),
+               bol["an_caja.rentas_fgs_y_otros"] + bol.get("resto_caja.rentas_fgs_y_otros", 0), 4 * T,
+               "Las dos caras de la misma operación intra-sector público (columna total del cuadro 5)."),
     ]
     if ci is not None:
         ci_rp = (None if None in (ci.get(("XI", "total_an")), ci.get((INTERESES_CI, "total_an")))
@@ -234,7 +246,7 @@ def puente(con: sqlite3.Connection, ej: int) -> dict:
                                    "(Cuadro 35, columna AN)", pa["resultado_primario"], ci_rp, 100,
                                    "Tolerancia 1 $: el xlsx guarda los importes en doble precisión."))
     return {
-        "estado": "ok", "ejercicio": ej, "unidad": "millones de pesos corrientes",
+        "estado": "ok", "ejercicio": ej, "unidad": "millones de pesos corrientes", "partida_es_cierre": es_cierre,
         "resultado_primario": primario, "resultado_financiero": financiero, "controles": controles,
         "tipos": {
             "punto_calculado": "Calculado desde los archivos de Presupuesto Abierto",

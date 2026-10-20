@@ -163,3 +163,34 @@ el mismo en primario y financiero: 553.705,6); intereses intra-SP pagados = rent
 Qué **no** está descompuesto: el residual de base (553.705,6 M$, 2,6 % del punto de partida) y la revisión entre cortes
 (−1.133.603,9 M$). Las fuentes disponibles no los abren por concepto. La operación AN → resto del SPN (transferencias y figurativas)
 es neutra para el consolidado: en la base caja se expone como figurativa (AN otorga 29.502.976,1 y recibe 21.816.667,1 M$).
+
+### Puentes históricos 2017–2025 (resultado primario, millones de pesos corrientes)
+
+Mismo método, con el Boletín Fiscal del 4º trimestre de cada año (páginas y variantes de rótulo registradas por año en
+`ingest/boletin_fiscal.py`; verificadas 2026-10-20) y el detalle de Presupuesto Abierto de cada año. **Solo en 2025** la
+partida está confirmada como cierre por la Cuenta de Inversión; en 2017–2024 se rotula "detalle de Presupuesto Abierto"
+(nota `cortes_an_sin_ci`). Pesos corrientes: los años no se comparan entre sí sin deflactar.
+
+| Ejercicio | Partida AN (PA) | Revisión de corte | Base caja (residual) | Rentas BCRA | Rentas FGS y otros | Resto SPN | **IMIG** |
+|---|---|---|---|---|---|---|---|
+| 2017 | −301.351,0 | −12.091,3 | 33.360,6 | −60.000,0 | −82.834,7 | 18.774,1 | **−404.142,3** |
+| 2018 | −271.634,9 | 1,2 | 46.755,2 | 0,0 | −122.082,5 | 7.973,7 | **−338.987,3** |
+| 2019 | 61.704,7 | 7.172,3 | 136.520,0 | −204.244,8 | −186.686,3 | 90.412,5 | **−95.121,6** |
+| 2020 | −394.785,3 | 26.310,9 | 51.551,1 | −1.606.981,6 | −104.684,8 | 278.632,4 | **−1.749.957,3** |
+| 2021 | −1.325.146,6 | 125.892,9 | 328.354,9 | −787.712,3 | −82.349,3 | 760.719,9 | **−980.240,5** |
+| 2022 | −2.915.619,2 | 470.864,8 | 485.504,2 | 0,0 | −118.110,9 | 417.613,2 | **−1.659.747,9** |
+| 2023 | −5.531.982,6 | −194.384,7 | 236.932,6 | −400.000,0 | −331.888,8 | 1.056.687,0 | **−5.164.636,5** |
+| 2024 | 8.295.944,7 | −538.193,4 | 843.773,0 | 0,0 | −914.360,4 | 2.718.645,7 | **10.405.809,6** |
+| 2025 | 21.433.030,3 | −1.133.603,9 | 553.705,6 | −11.976.386,7 | −986.977,3 | 3.879.450,7 | **11.769.218,7** |
+
+Controles con datos reales (2026-10-20): en los nueve años la llegada coincide con la suma de 12 meses del IMIG (tolerancia
+0,65 M$ por redondeo de 13 cifras) y las dos caras de la operación intra-sector público coinciden en la columna total del
+cuadro 5. **Discrepan y se informan sin ajustar:** intereses netos de caja + intra-SP ≠ intereses devengados del cuadro 1 en
+2017–2024 (de −39.178,5 a +303.462,7 M$; el residual de base del resultado financiero difiere del primario); rentas netas +
+BCRA + FGS ≠ rentas devengadas en 2018 (−3.334,1 M$) y por ±0,4 M$ en 2017 y 2022 (redondeo del cuadro publicado). En 2022
+las rentas devengadas de la AN incluyen las asociadas a emisiones primarias del Tesoro (nota `boletin_2022_rentas_emisiones_primarias`).
+Corrección respecto de la versión anterior: el control intra-SP comparaba intereses AN + resto contra rentas FGS de la AN
+sola; ahora compara las dos columnas totales (la nota (2) del cuadro 5 de 2017 lo confirma: 83.140,8 = 83.140,8).
+
+Además, la fila de cada año de `totales-de-presupuesto.csv` **no coincide** con la suma del detalle anual en 2018–2024
+(conciliaciones `AAAA:*: ... vs pa_totales`): es otro corte de publicación y se muestra como discrepancia.

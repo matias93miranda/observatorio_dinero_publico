@@ -14,7 +14,8 @@ from .ingest import presupuesto_abierto as pa
 from .ingest import series_tiempo as st
 from .ingest.base import run_ingestion
 
-DEFAULT_EJERCICIOS = (2025, 2026)
+# 2017: primer año con la metodología base caja vigente (ver metodologia.caja_spn_2017_rentas_intra_sp).
+DEFAULT_EJERCICIOS = tuple(range(2017, 2027))
 # Publicaciones de cierre con conector (verificadas a mano: el nombre de archivo no es predecible).
 CI_EJERCICIOS = (2025,)
 BOLETINES_T4 = tuple(ej for (ej, t) in bf.BOLETINES if t == 4)

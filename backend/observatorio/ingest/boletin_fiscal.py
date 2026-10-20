@@ -67,54 +67,84 @@ class Boletin:
 _C1 = "Cuadro 1 · AN · base recaudado/devengado"
 _C5 = "Cuadro 5 · SPN · base caja"
 _C4 = "Cuadro 4 · SPN · base caja"
-BOLETINES = {
-    (2025, 4): Boletin(
-        ejercicio=2025, trimestre=4, archivo="4totrim25", periodo="2025 (acumulado al 4º trimestre)",
-        marcas={57: ("CUADRO 1", "ADMINISTRACIÓN NACIONAL", "BASE RECAUDADO / DEVENGADO", "4to. TRIMESTRE DE 2025"),
-                61: ("CUADRO 4", "SECTOR PÚBLICO NACIONAL", "BASE CAJA", "4to. TRIMESTRE DE 2025"),
-                62: ("CUADRO 5", "SECTOR PUBLICO NACIONAL", "BASE CAJA", "4to. TRIMESTRE DE 2025")},
-        figuras=(
-            Fig("an_dev.recursos_totales", 57, _C1, "VI TOTAL RECURSOS (I+IV)", 1, AN, DEV, "Recursos totales"),
-            Fig("an_dev.gastos_totales", 57, _C1, "VII TOTAL GASTOS (II+V)", 1, AN, DEV, "Gastos totales"),
-            Fig("an_dev.intereses", 57, _C1, "Intereses", 1, AN, DEV, "Intereses"),
-            Fig("an_dev.rentas_propiedad", 57, _C1, "Rentas de la Propiedad", 1, AN, DEV, "Rentas de la propiedad"),
-            Fig("an_dev.resultado_primario", 57, _C1, "VIII RESULTADO PRIMARIO", 1, AN, DEV, "Resultado primario"),
-            Fig("an_dev.resultado_financiero", 57, _C1, "IX RESULTADO FINANCIERO", 1, AN, DEV, "Resultado financiero"),
-            Fig("an_caja.rentas_netas", 62, _C5, "Rentas de la Propiedad Netas (1)", 0, AN, CAJA_NM,
-                "Rentas de la propiedad netas (sin BCRA ni FGS)"),
-            Fig("an_caja.intereses_netos", 62, _C5, "Intereses Netos (2)", 0, AN, CAJA_NM, "Intereses netos"),
-            Fig("an_caja.contribuciones_figurativas", 62, _C5, "IX CONTRIBUCIONES FIGURATIVAS", 0, AN, CAJA_NM,
-                "Contribuciones figurativas recibidas"),
-            Fig("an_caja.gastos_figurativos", 62, _C5, "X GASTOS FIGURATIVOS", 0, AN, CAJA_NM,
-                "Gastos figurativos otorgados"),
-            Fig("an_caja.resultado_primario_sin_rentas", 62, _C5, "XIV RESULTADO PRIMARIO SIN RENTAS (XI-XII)", 0,
-                AN, CAJA_NM, "Resultado primario sin rentas"),
-            Fig("an_caja.resultado_financiero", 62, _C5, "XV RESULTADO FINANCIERO (XI-XIII)", 0, AN, CAJA_NM,
-                "Resultado financiero"),
-            Fig("an_caja.rentas_bcra", 62, _C5, "- RENTAS DE LA PROPIEDAD PERCIBIDAS DEL BCRA", 0, AN, "caja",
-                "Rentas de la propiedad percibidas del BCRA (excluidas del resultado)"),
-            Fig("an_caja.rentas_fgs_y_otros", 62, _C5, "- RENTAS DE LA PROPIEDAD PERCIBIDAS DEL FGS Y OTROS", 0, AN,
-                "caja", "Rentas de la propiedad percibidas por el FGS y otros (intra-sector público, excluidas)"),
-            Fig("an_caja.intereses_intra_sp", 62, _C5, "- RENTAS DE LA PROPIEDAD PAGADAS SOBRE DEUDA", 0, AN, "caja",
-                "Intereses pagados intra-sector público (excluidos del gasto)"),
-            Fig("resto_caja.resultado_primario", 62, _C5, "XIV RESULTADO PRIMARIO SIN RENTAS (XI-XII)", 1, RESTO,
-                CAJA_NM, "Resultado primario"),
-            Fig("resto_caja.resultado_financiero", 62, _C5, "XV RESULTADO FINANCIERO (XI-XIII)", 1, RESTO, CAJA_NM,
-                "Resultado financiero"),
-            Fig("resto_caja.intereses_intra_sp", 62, _C5, "- RENTAS DE LA PROPIEDAD PAGADAS SOBRE DEUDA", 1, RESTO,
-                "caja", "Intereses pagados intra-sector público (excluidos del gasto)"),
-            Fig("spn_caja.ingresos", 62, _C5, "VI INGRESOS ANTES DE FIGURATIVAS (I+ IV)", 2, SPN, CAJA_NM,
-                "Ingresos totales"),
-            Fig("spn_caja.resultado_primario", 62, _C5, "XIV RESULTADO PRIMARIO SIN RENTAS (XI-XII)", 2, SPN, CAJA_NM,
-                "Resultado primario"),
-            Fig("spn_caja.resultado_financiero", 62, _C5, "XV RESULTADO FINANCIERO (XI-XIII)", 2, SPN, CAJA_NM,
-                "Resultado financiero"),
-            Fig("spn_caja.superavit_operativo_empresas", 61, _C4, "Superávit Operativo de Empresas Públicas", 4, SPN,
-                CAJA_NM, "Superávit operativo de empresas públicas (las empresas entran por su resultado neto)"),
-            Fig("spn_caja.deficit_operativo_empresas", 61, _C4, "Deficit Oper.Empresas Públicas", 4, SPN, CAJA_NM,
-                "Déficit operativo de empresas públicas (las empresas entran por su resultado neto)"),
-        )),
-}
+
+
+def _figuras(p1: int, p4: int, p5: int, rot: dict[str, str]) -> tuple[Fig, ...]:
+    """Las mismas 24 filas en todos los años; cambian la página y, a veces, la redacción del rótulo."""
+    def r(fid, default):
+        return rot.get(fid, default)
+    return (
+        Fig("an_dev.recursos_totales", p1, _C1, "VI TOTAL RECURSOS (I+IV)", 1, AN, DEV, "Recursos totales"),
+        Fig("an_dev.gastos_totales", p1, _C1, "VII TOTAL GASTOS (II+V)", 1, AN, DEV, "Gastos totales"),
+        Fig("an_dev.intereses", p1, _C1, "Intereses", 1, AN, DEV, "Intereses"),
+        Fig("an_dev.rentas_propiedad", p1, _C1, r("an_dev.rentas_propiedad", "Rentas de la Propiedad"), 1, AN, DEV,
+            "Rentas de la propiedad"),
+        Fig("an_dev.resultado_primario", p1, _C1, "VIII RESULTADO PRIMARIO", 1, AN, DEV, "Resultado primario"),
+        Fig("an_dev.resultado_financiero", p1, _C1, "IX RESULTADO FINANCIERO", 1, AN, DEV, "Resultado financiero"),
+        Fig("an_caja.rentas_netas", p5, _C5, "Rentas de la Propiedad Netas (1)", 0, AN, CAJA_NM,
+            "Rentas de la propiedad netas (sin BCRA ni FGS)"),
+        Fig("an_caja.intereses_netos", p5, _C5, "Intereses Netos (2)", 0, AN, CAJA_NM, "Intereses netos"),
+        Fig("an_caja.contribuciones_figurativas", p5, _C5, "IX CONTRIBUCIONES FIGURATIVAS", 0, AN, CAJA_NM,
+            "Contribuciones figurativas recibidas"),
+        Fig("an_caja.gastos_figurativos", p5, _C5, "X GASTOS FIGURATIVOS", 0, AN, CAJA_NM,
+            "Gastos figurativos otorgados"),
+        Fig("an_caja.resultado_primario_sin_rentas", p5, _C5, "XIV RESULTADO PRIMARIO SIN RENTAS (XI-XII)", 0,
+            AN, CAJA_NM, "Resultado primario sin rentas"),
+        Fig("an_caja.resultado_financiero", p5, _C5, "XV RESULTADO FINANCIERO (XI-XIII)", 0, AN, CAJA_NM,
+            "Resultado financiero"),
+        Fig("an_caja.rentas_bcra", p5, _C5, "- RENTAS DE LA PROPIEDAD PERCIBIDAS DEL BCRA", 0, AN, "caja",
+            "Rentas de la propiedad percibidas del BCRA (excluidas del resultado)"),
+        Fig("an_caja.rentas_fgs_y_otros", p5, _C5, "- RENTAS DE LA PROPIEDAD PERCIBIDAS DEL FGS Y OTROS", 0, AN,
+            "caja", "Rentas de la propiedad percibidas por el FGS y otros (intra-sector público, excluidas)"),
+        Fig("an_caja.intereses_intra_sp", p5, _C5, "- RENTAS DE LA PROPIEDAD PAGADAS SOBRE DEUDA", 0, AN, "caja",
+            "Intereses pagados intra-sector público (excluidos del gasto)"),
+        Fig("resto_caja.resultado_primario", p5, _C5, "XIV RESULTADO PRIMARIO SIN RENTAS (XI-XII)", 1, RESTO,
+            CAJA_NM, "Resultado primario"),
+        Fig("resto_caja.resultado_financiero", p5, _C5, "XV RESULTADO FINANCIERO (XI-XIII)", 1, RESTO, CAJA_NM,
+            "Resultado financiero"),
+        Fig("resto_caja.rentas_fgs_y_otros", p5, _C5, "- RENTAS DE LA PROPIEDAD PERCIBIDAS DEL FGS Y OTROS", 1,
+            RESTO, "caja", "Rentas de la propiedad percibidas por el FGS y otros (intra-sector público, excluidas)"),
+        Fig("resto_caja.intereses_intra_sp", p5, _C5, "- RENTAS DE LA PROPIEDAD PAGADAS SOBRE DEUDA", 1, RESTO,
+            "caja", "Intereses pagados intra-sector público (excluidos del gasto)"),
+        Fig("spn_caja.ingresos", p5, _C5, "VI INGRESOS ANTES DE FIGURATIVAS (I+ IV)", 2, SPN, CAJA_NM,
+            "Ingresos totales"),
+        Fig("spn_caja.resultado_primario", p5, _C5, "XIV RESULTADO PRIMARIO SIN RENTAS (XI-XII)", 2, SPN, CAJA_NM,
+            "Resultado primario"),
+        Fig("spn_caja.resultado_financiero", p5, _C5, "XV RESULTADO FINANCIERO (XI-XIII)", 2, SPN, CAJA_NM,
+            "Resultado financiero"),
+        Fig("spn_caja.superavit_operativo_empresas", p4, _C4,
+            r("spn_caja.superavit_operativo_empresas", "Superávit Operativo de Empresas Públicas"), 4, SPN,
+            CAJA_NM, "Superávit operativo de empresas públicas (las empresas entran por su resultado neto)"),
+        Fig("spn_caja.deficit_operativo_empresas", p4, _C4, "Deficit Oper.Empresas Públicas", 4, SPN, CAJA_NM,
+            "Déficit operativo de empresas públicas (las empresas entran por su resultado neto)"),
+    )
+
+
+def _boletin(ej: int, p1: int, p4: int, p5: int, **rot: str) -> Boletin:
+    trim = f"4to. TRIMESTRE DE {ej}"
+    return Boletin(
+        ejercicio=ej, trimestre=4, archivo=f"4totrim{ej % 100:02d}", periodo=f"{ej} (acumulado al 4º trimestre)",
+        marcas={p1: ("CUADRO 1", "ADMINISTRACIÓN NACIONAL", "BASE RECAUDADO / DEVENGADO", trim),
+                p4: ("CUADRO 4", "SECTOR PÚBLICO NACIONAL", "BASE CAJA", trim),
+                p5: ("CUADRO 5", "SECTOR PUBLICO NACIONAL", "BASE CAJA", trim)},
+        figuras=_figuras(p1, p4, p5, rot))
+
+
+# Páginas y variantes de rótulo verificadas a mano en cada PDF (2026-10-20). La redacción cambia entre
+# años ("Superávit Oper." hasta 2022; "(1)" en las rentas de 2022): se registra, no se adivina.
+_SUP_ABREV = "Superávit Oper.Empresas Públicas"
+BOLETINES = {(b.ejercicio, b.trimestre): b for b in (
+    _boletin(2017, 61, 64, 65, **{"spn_caja.superavit_operativo_empresas": _SUP_ABREV}),
+    _boletin(2018, 62, 66, 67, **{"spn_caja.superavit_operativo_empresas": _SUP_ABREV}),
+    _boletin(2019, 62, 66, 67, **{"spn_caja.superavit_operativo_empresas": _SUP_ABREV}),
+    _boletin(2020, 66, 70, 71, **{"spn_caja.superavit_operativo_empresas": _SUP_ABREV}),
+    _boletin(2021, 65, 69, 70, **{"spn_caja.superavit_operativo_empresas": _SUP_ABREV}),
+    _boletin(2022, 63, 67, 68, **{"spn_caja.superavit_operativo_empresas": _SUP_ABREV,
+                                  "an_dev.rentas_propiedad": "Rentas de la Propiedad (1)"}),
+    _boletin(2023, 60, 64, 65),
+    _boletin(2024, 58, 62, 63),
+    _boletin(2025, 57, 61, 62),
+)}
 
 
 def dataset_def(ejercicio: int, trimestre: int) -> DatasetDef:

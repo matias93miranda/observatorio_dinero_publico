@@ -35,3 +35,17 @@ def test_citas_metodologicas_reales_verificadas():
     con = db.connect()
     for r in metodologia.refresh(con):
         assert r["estado_verificacion"] in ("verificada_en_crudo", "hallazgo_reproducible"), r
+
+
+def test_puentes_historicos_llegan_al_imig_sin_ajustes():
+    """2017-2024: la llegada es el IMIG y las dos caras intra-SP coinciden. Los demás controles pueden
+    discrepar (intereses caja vs devengado, rentas 2018): se informan, no se fuerzan."""
+    from observatorio import db, puente
+    con = db.connect()
+    for ej in range(2017, 2025):
+        p = puente.puente(con, ej)
+        assert p["estado"] == "ok" and p["partida_es_cierre"] is False, ej
+        estados = {c["control"]: c["estado"] for c in p["controles"]}
+        llegada = [k for k in estados if k.startswith("Llegada") or k.startswith("Intereses intra-SP")]
+        assert len(llegada) == 3 and all(estados[k] == "coincide" for k in llegada), (ej, estados)
+        assert not [x for x in p["resultado_primario"] if x.get("advertencia")], ej
